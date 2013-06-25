@@ -1,0 +1,359 @@
+
+/**
+ * DBController.java
+ */
+
+package database;
+
+import cards.*;
+import controlcenter.ControlCenter;
+import static controlcenter.ControlCenter.*;
+import main.Main;
+import helpclasses.*;
+import interfaces.User;
+import java.sql.SQLException;
+import static javax.swing.JOptionPane.*;
+import user.*;
+
+/**Klassen hanterar det externa tabellfönstret samt sköter överföring av data 
+ * mellan program och databas.
+ * Händelser i tabellfönstret registreras i lyssnarklassen <code>DBInput</code>
+ * som skickar vidare händelsen till denna klass som tar hand om anropet.
+ * 
+ * @author Kristian Mörling
+ */
+public class DBController {
+    private DBViewer dbViewer; //fristående fönster för att visa tabell
+    private String currentTable = ""; //vald tabell i fönster
+    private ControlCenter ctrlCenter; 
+    private final String rootPass = "mah"; //nyckel för att återställa program
+    
+    /**
+     * Konstruktören initerar det fristående tabellfönstret samt initierar 
+     * lyssnarklass för tabellfönster.
+     * Konstruktören tar även emot en referens till <code>ControlCenter</code>
+     * som används för att meddela programmet när tabellfönstret stängts ner.
+     * @param ctrlCenter referens till <code>ControlCenter</code>
+     * @throws SQLException 
+     */
+    public DBController(ControlCenter ctrlCenter) throws SQLException {
+        this.ctrlCenter = ctrlCenter; 
+        DBInput dbInput = new DBInput(this); 
+        dbViewer = new DBViewer(dbInput);
+    }
+    
+    /**
+     * Metoden anropas när man väljer att öppna det fristående tabellfönster 
+     * (bilden på en kikare).
+     * Innan fönstret visas, hämtar metoden namn på användarens tabeller
+     * och sparar det i ett strängfält. Strängfältet skickas till grafikklassen
+     * <code>DBViewer</code> där den placeras i en <code>JComboBox</code>
+     * innehållande användarens tabellnamn.
+     */
+    public void openTable() {
+        String[] userTables;
+        
+        if (user.hasTables()) { //öppna endast tabell ifall anv. har några samlingar
+           
+            userTables = new String[user.getUserCollections().size()];
+            
+            //spara lista över kortsamlingar som strängfält
+            user.getUserCollections().toArray(userTables); 
+            
+            //Eftersom strängfältet skickas till en JComboBox så blir det 
+            //första värdet i fältet automatiskt valt. Därför blir den 
+            //aktuella kortsamlingen det första värdet i fältet.
+            currentTable = userTables[0]; 
+                        
+            dbViewer.openTable(userTables); //öppna tabellfönster
+            
+        } else { //användaren saknar samlingar
+            showMessageDialog(null, "Användaren saknar kortsamling!"
+                    + "\nVälj arkiv -> ny kortsamling för att skapa en samling");
+        }
+    }
+    
+    /**
+     * Metoden visar den kortsamling man valt att visa i tabellfönstret.
+     * Metoden anropas när man trycker på uppdatera knappen i tabellfönstret.
+     * En vektor skapas av den kortsamling man valt att uppdatera innehållet av. 
+     * Vektorn används för att visa innehållet i kortsamlingen i tabellfönstret. 
+     */
+    public void updateTable() {
+        
+        int userId = user.getUserId(), nbrOfOutdatedCards;
+        
+        //hämta namn på vald kortsamling,
+        //kontrollera ifall tabell innehåller några utgångna kort
+        currentTable = dbViewer.getSelectedCmbBoxTable() + "_" + userId;
+        nbrOfOutdatedCards = user.getCardCollection(currentTable).
+                getOutdatedCount();
+        
+        //skapa och skicka tabelldata, tillsammand med argument som talar om 
+        //ifall det finns några utgångna kort
+        Object[][] tableData = user.getCardCollection(currentTable).getTable();
+        dbViewer.setTableData(tableData, nbrOfOutdatedCards > 0 );
+    }
+    
+    /**
+     * Metoden förbereder kort för att öppnas i ett dialogfönster.
+     * Först kontrolleras ifall användaren valt något kort i det fristående 
+     * tabellfönstret. Om användaren valt ett kort i tabellen så öppnas kortet.
+     * Trycker användaren på ok efter att ha öppnat dialogfönstret så uppdateras
+     * kortet till databasen, och användarens kortsamlingar hämtas på nytt 
+     * från databasen.
+     * @throws SQLException 
+     */
+    public void openCard() throws SQLException {
+        Card card;
+        CardViewer cv;
+        
+        //kontrollera ifall något kort är valt i tabellfönster
+        if (dbViewer.isAnyRowSelected()) {
+            
+            //genom kortid-nummer hämta valt kort från kortsamling
+            int selectedCard = dbViewer.getSelectedCard();
+            card = user.getCardCollection(currentTable).getCard(selectedCard);
+            
+            //skapa objekt för att visa kort, öppna objekt i dialogfönster
+            cv = new CardViewer(card); 
+            if (dbViewer.showCardDialog(cv) == OK_OPTION) {
+                
+                //uppdatera kort ifall användaren tryckt på ok
+                saveCard(new Card( card.getCardId(), card.getExpiresAt(), 
+                        cv.getTextFront(), cv.getTextBack(), card.getLevel()) ); 
+            }
+            
+        } else { //inget kort valt, visa meddellande
+            showNoRowSelectedMessage(); 
+        }
+    }
+
+    /**
+     * Metoden används för att ta bort ett kort från databasen. 
+     * @throws SQLException 
+     */
+    public void removeCard() throws SQLException {
+        int selectedCard;
+        if (dbViewer.isAnyRowSelected()) { //kontrollera ifall något kort valts
+            selectedCard = dbViewer.getSelectedCard(); //hämta valt kort
+            CardManager.removeCard(currentTable, selectedCard); //ta bort från db
+            updateUserTables(); //spara förändringar i användarobjekt
+            updateTable(); //uppdatera fristående tabellfönster
+        } else {
+            showNoRowSelectedMessage(); //inget kort valt visa meddelande
+        }
+    }
+    
+    /**
+     * Metoden öppnar ett dialogfönster som används för att skapa ett nytt kort.
+     * @throws SQLException 
+     */
+    public void newCard() throws SQLException {
+        Card card;
+        CardViewer cv;
+        int cardId; 
+        
+        //spara kort ifall användaren tryckt på "ok"
+        while ( dbViewer.showCardDialog( cv = new CardViewer() ) == OK_OPTION ) {
+            
+            //bestäm det nya kortets idnummer
+            cardId = SortSQL.nextCardId(currCollection); 
+           
+            //skapa kort
+            card = new Card( cardId, cv.getTextFront(), cv.getTextBack() ); 
+            
+            //spara kort i databas
+            CardManager.newCard(card, currCollection); 
+            
+            //lägg till nytt kort i användarobjektets kortsamling
+            updateUserTables(); 
+        }
+    }
+    
+    /**
+     * Metoden skickar ändringar på ett kort till databasen.
+     * @param card kort att uppdatera
+     * @throws SQLException 
+     */
+    public void saveCard(Card card) throws SQLException {
+        CardManager.updateCard(card, currentTable);
+        //hämta ny data från databas
+        updateUserTables();
+    }
+    
+    /**
+     * Metoden återaktiverar knapparna som inaktiverades när det fristående 
+     * tabellfönstret öppnades.
+     * Metoden anropas när man stänger ned det interna tabellfönstret.
+     */
+    protected void returnToCtrlCenter() {
+        MenuItemGroup.enableGroup(MenuItemGroup.CTRL_CENTER);
+        ctrlCenter.updateCtrlCenter(); //uppdatera programmets interna tabell
+    }
+    
+    /**
+     * Metoden hämtar tabeller från databas och sparar dem i användarobjekt.
+     * Metoden används för att spara förändringar i databas till användarobjekt.
+     * @throws SQLException 
+     */
+    private void updateUserTables() throws SQLException {
+        ((RegularUser)user).updateCollections(); //hämta ny tabelldata från databas 
+    }
+    
+    /**
+     * Metoden skapar en ny kortsamling.
+     * @throws SQLException 
+     */
+    public void createCollection() throws SQLException {
+        int userId;
+        //öppna dialogfönster för att mata in namn 
+        String collName = showInputDialog("Ange namn på ny kortsamling");
+        
+        if (collName != null) { //spara tabell om användaren tryckt "ok" 
+            
+            //namn får inte innehålla mellanslag
+            collName = collName.replace(" ", ""); 
+            
+            //spara tabel, om tabellnman inte redan existerar
+            //hämta användarens id nummer för att lägga till i slutet på 
+            //kortsamlingens namn
+            if ( !CollectionManager.tableExists(collName) ) {
+                userId = user.getUserId(); 
+                CollectionManager.newCollection(userId, collName); //spara i db
+                updateUserTables(); //lägg till kortsamling i användarobjekt
+                ctrlCenter.updateCtrlCenter(); //uppd. det inre tabellfönstret
+            } else { //visa meddelande om kortsamling redan finns
+                showMessageDialog(null, "Kortsamlingen " + collName +
+                        " finns redan i databasen!");
+            }
+        }
+    }
+    
+    /**
+     * Metoden raderar en kortsamling.
+     * Först raderas tabellen från databasen sedan från användarobjektet.
+     * @param tableName namn på tabell att radera
+     * @throws SQLException 
+     */
+    public void removeCollection(String tableName) throws SQLException {
+        if ( (showConfirmDialog(null,
+                "Är du säker på att du vill ta bort " + tableName, 
+                "Ta bort tabell", YES_NO_OPTION)) == YES_OPTION) {
+            CollectionManager.removeCollection(tableName);
+            updateUserTables();
+            ctrlCenter.updateCtrlCenter();
+        }
+    }
+    
+    /**
+     * Autosparfunktion, överför kortsamlingar i användarobjekt till databas.
+     * Anropas varje gång användaren återvänt till huvudfönstret efter att 
+     * ha öppnat en kortsamling genom öppna knappen i det inre tabellfönstret.
+     * På detta sätt sparas de kort man lagt till. Även de kort man betygsatt
+     * under en kortövning sparas trots att man avbrutit kortövningen.
+     * @throws SQLException 
+     */
+    public void collectionToDB() throws SQLException {
+        if ( user instanceof RegularUser ) { //guest kan studera kort men inte ändra dem
+            String collName = currCollection;
+            CardCollection cCol = user.getCardCollection(collName);
+            CollectionManager.updateCollection(cCol); //behöver uppgiften en egen tråd?
+        }
+    }
+    
+    /**
+     * Metoden tar bort en användare från databasen.
+     * Efter att användaren tagits bort, så raderas även samtliga kortsamlingar
+     * som tillhörde användaren.
+     * @throws SQLException 
+     */
+    public void removeUser() throws SQLException {
+        int userId = user.getUserId();
+        String message = "Radera " + user.getUsername() + " från databasen?";
+        //ifall användaren är säker på sitt val, ta bort användaren
+        if ( (showConfirmDialog(null, message, "", YES_NO_OPTION) == YES_OPTION ) ) {
+            UserManager.removeUser(userId); //ta bort anv. fr. databas
+            updateUser(new Guest()); //logga in som gäst
+        }
+    }
+    
+    /**
+     * Metoden byter användare.
+     * @throws SQLException 
+     */
+    public void switchUser() throws SQLException {
+        updateUser(new Login().login()); //anropar dialogfönster för att logga in
+    }
+    
+    /**
+     * Metoden skapar en användare.
+     * @throws SQLException 
+     */
+    public void createUser() throws SQLException {
+        updateUser(Login.createUser()); //öppna dialogfönster 
+    }
+    
+    /**
+     * Metoden uppdaterar programmets användarobjekt till nyinloggad användare.
+     * Anropas när man bytt användare eller tagit bort en användare. Då man blir 
+     * automatiskt inloggad som gäst, vid borttagning av användare.
+     * @param user nyinloggad användare
+     * @throws SQLException 
+     */
+    private void updateUser(User user) throws SQLException {
+        if ( user != null ) { //lyckad inloggning!
+            ControlCenter.user = user;
+            //aktivera knappar efter användare
+            MenuItemGroup.setUser(user);
+            MenuItemGroup.enableGroup(MenuItemGroup.CTRL_CENTER);
+            ctrlCenter.updateCtrlCenter();
+            Main.setLoggedInUserLabel(user.getUsername());
+        }
+    }
+    
+    /**
+     * Öppnar popupfönster när användaren högerklickat inuti det fristående 
+     * tabellfönstret.
+     * @param mouseXPos muspekarens placering i x-led
+     * @param mouseYPos muspekarens placering i y-led
+     */
+    protected void showPopupMenu(int mouseXPos, int mouseYPos) {
+        dbViewer.showPopupMenu(mouseXPos, mouseYPos);
+    }
+    
+    /**
+     * Visar ett meddelande som anropas när användaren valt öppna eller ta bort
+     * ett kort när inget kort har valts.
+     */
+    private void showNoRowSelectedMessage() {
+        showMessageDialog(null, "Du har inte valt något kort!");
+    }
+    
+    /**
+     * Återställer databasen genom att ta bort allt innehåll och lägga till 
+     * nytt innehåll genom att exekvera ett SQL-skript.
+     * @throws SQLException 
+     */
+    public void resetDB() throws SQLException {
+        String warningMsg = "Att återställa databasen innebär att programmet "
+                + "\nåtergår till sina standardinställningar. \n\nSamtliga "
+                + "tabeller och användare försvinner ur databasen. "
+                + "\nÄr du säker på ditt val?\n\n",
+                message = "Ange administratörens lösenord:\n", input = "";
+        int choice = showConfirmDialog(null, warningMsg, //visa varningsmeddellande
+                "Återställ databas", WARNING_MESSAGE);
+        
+        //ifall användaren bekräftat sitt och val och skrivit in rätt administratör-
+        //lösenord, återställ databas
+        if ( (choice == YES_OPTION) && (input=showInputDialog(message)) != null ) {
+            if ( input.equals(rootPass) ) {
+                UserManager.resetDB();
+                showMessageDialog(null, "Databas återställd");
+                updateUser(new Guest()); //logga in som gästanvändare
+            } else {
+                showMessageDialog(null, "Felaktigt lösenord!");
+            }
+        }
+    }
+}

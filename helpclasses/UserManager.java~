@@ -1,0 +1,113 @@
+
+/**
+ * UserManager.java
+ */
+
+package helpclasses;
+
+import database.SQL;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.sql.*;
+import javax.swing.JOptionPane;
+
+/**
+ * Klassen sköter anrop till databasen som tar bort eller lägger till användare.
+ * Klassen sköter även återställning av databas genom att läsa SQL-skriptet
+ * "projekt.sql".
+ * till kort.
+ * @author Kristian Mörling
+ */
+public class UserManager {
+    
+    /**
+     * Sparar ny användare till databasen.
+     * Metoden returnerar som användarens id nummer som används som är ett 
+     * attribut i användarklassen.
+     * @param username namn på användare
+     * @param password lösenord till användare
+     * @return idnummer för nyskapad användare 
+     * @throws SQLException 
+     */
+    public static int createUser(String username, String password) throws SQLException {
+        String command = "";
+        int userId = SortSQL.nextUserId(); //bestäm användarens id nummer
+        
+        //spara användarid, användarnamn och användarlösenord i db
+        PreparedStatement ps;
+        command = "INSERT INTO users VALUES (" + userId + ", '" + username + 
+                "', '" + password + "')";
+        ps = SQL.connection.prepareStatement(command);
+        ps.execute();
+        return userId;
+    }
+    
+    /**
+     * Metoden tar bort en användare från databasen.
+     * @param userId id nummer på användare att ta bort
+     * @throws SQLException 
+     */
+    public static void removeUser(int userId) throws SQLException {
+        String command = "DELETE FROM users WHERE UserId=" + userId;
+        PreparedStatement ps = SQL.connection.prepareStatement(command);
+        ps.executeUpdate(); //ta bort användare
+        
+        //radera även användarens tabeller
+        CollectionManager.removeTables(userId);
+    }
+    
+    /**
+     * Metoden tömmer databasen för att sedan återställa den genom att 
+     * använda skriptet "projekt.sql".
+     * @throws SQLException 
+     */
+    public static void resetDB() throws SQLException {
+        //hämta info om samtliga tabeller
+        String command = "SHOW TABLES";
+        PreparedStatement ps;
+        ResultSet rs = SQL.statement.executeQuery(command);
+        //ta bort samtliga tabeller
+        while (rs.next()) {
+            command = "DROP TABLE " + rs.getString(1);
+            ps = SQL.connection.prepareStatement(command);
+            ps.execute();
+        }
+        //kör skriptet "projekt.sql"
+        executeResetScript();
+    }
+    
+    /**
+     * Metoden läser in och exekverar återställningsskriptet "projekt.sql".
+     * Skriptet återskapar användartabell med användarna "Rolf" och "Guest" 
+     * samt tabellerna "MaterialDel1", "MaterialDel2" och "MaterialDel3".<br><br>
+     * Metoden läser och sparar rader ur skriptet i en sträng. Tomma rader och 
+     * nummertecken # ignoreras. Skulle en rad innehålla semikolon så exekveras
+     * de rader sparats i strängen. Därefter töms strängen för att göra samma 
+     * sak igen ifall det finns fler rader att läsa.
+     * @throws SQLException 
+     */
+    private static void executeResetScript() throws SQLException {
+        PreparedStatement ps;
+        String errMsg = "Kunde inte läsa SQL-skript!", script = "";
+        try {
+            BufferedReader r = new BufferedReader(new FileReader("src/script/projekt.sql"));
+            String line = "";
+            //läs in och spara skript i sträng
+            while ( (line = r.readLine()) != null ) {
+                //tomma rader eller kommentarmarkeringar ska inte ingå i kommandot
+                if ( (!line.startsWith("#") && (line.length() > 0) )) {
+                    script += line;
+                }
+                //semikolon indikerar slutet på kommandot, exekvera kommandot
+                if (line.contains(";")) { //exekvera query
+                    ps = SQL.connection.prepareStatement(script);
+                    ps.execute();
+                    script = ""; //gör sträng redo för nästa kommando
+                }
+            }
+            //visa felmeddellande vid felaktig inläsning av skript
+        } catch (IOException e) { JOptionPane.showMessageDialog(null, errMsg, 
+                "Återställ databas", JOptionPane.ERROR_MESSAGE ); }
+    }
+}

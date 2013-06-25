@@ -1,0 +1,66 @@
+
+
+package user;
+
+import cards.CardCollection;
+import helpclasses.CollectionManager;
+import interfaces.User;
+import java.sql.*;
+import java.util.*;
+
+/**
+ *
+ * @author Kristian Mörling
+ */
+
+public class Guest implements User {
+    private int userId = 1000;
+    private String username = "guest";
+    private ArrayList<CardCollection> cardCollections; //samtliga kortsamlingar
+    
+    public Guest() { 
+        try {
+            String command = "SHOW TABLES LIKE '%100_'";
+            cardCollections = CollectionManager.getTablesAsCollections(command);
+        } catch (SQLException e) { 
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    @Override
+    public String getUsername() {
+        return username;
+    }
+    
+    @Override
+    public int getUserId() {
+        return userId;
+    }
+    
+    @Override
+    public boolean hasTables() {
+        return !cardCollections.isEmpty();
+    }
+    
+    @Override
+    public ArrayList<String> getUserCollections() {
+        ArrayList<String> userTables = new ArrayList<String>();
+        for (CardCollection cc : cardCollections) {
+            userTables.add(cc.getCollectionName());
+        }
+        return userTables;
+    }
+    
+    @Override
+    public CardCollection getCardCollection(String collectionName) {
+        String name = "";
+        for (CardCollection cc: cardCollections) {
+            name = cc.getCollectionName();
+            if (name.equals(collectionName)) {
+                return cc;
+            }
+        }
+        return null;
+    }
+}
