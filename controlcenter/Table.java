@@ -33,7 +33,7 @@ public class Table extends JPanel {
         JScrollPane scrollPane = new JScrollPane(rowsPanel);
         userTables = user.getUserCollections(); //hämta kortsamlingar
 
-        JLabel lblCollections = new JLabel("Samlingar", JLabel.CENTER);
+        JLabel lblCollections = new JLabel("Samlingar", JLabel.LEFT);
         JLabel lblNbrOutdated = new JLabel("Utgångna kort", JLabel.CENTER);
         
         //sortera samlingar i alfabetisk ordning

@@ -12,7 +12,7 @@ package helpclasses;
  */
 public class HTML {
     private static String[] tags = {  "&lt", "&gt", "<br>", "&nbsp;&nbsp;&nbsp;" };
-    private static String[] ctrlCharacters = { ">", "<", "\n", "\t" };
+    private static String[] ctrlCharacters = { "<", ">", "\n", "\t" };
     
     /**
      * Returnerar vanligt text som html text.
