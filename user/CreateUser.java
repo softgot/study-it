@@ -5,7 +5,6 @@
 
 package user;
 import helpclasses.UserManager;
-import interfaces.User;
 import java.awt.GridLayout;
 import java.sql.SQLException;
 import javax.swing.*;
@@ -82,7 +81,6 @@ public class CreateUser {
      */
     public User createUser() throws SQLException {
         JFrame frame = new JFrame("Skapa ny användare");
-        String username = "", name, password;
         
         //visa dialogfönster så länge man valt ok
         while ( (JOptionPane.showConfirmDialog(frame, inputPanel, "Skapa användare",
@@ -90,8 +88,8 @@ public class CreateUser {
                 JOptionPane.OK_OPTION ) )  {
             
             if (inputCorrect()) {
-                username = textField.getText();
-                password = new String(passField.getPassword(), 0,
+                String username = textField.getText();
+                String password = new String(passField.getPassword(), 0,
                         passField.getPassword().length);
                 int userId = UserManager.createUser(username, password);
                 

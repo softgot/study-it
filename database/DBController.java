@@ -8,11 +8,9 @@ import cards.*;
 import controlcenter.ControlCenter;
 import static controlcenter.ControlCenter.*;
 import helpclasses.*;
-import interfaces.User;
 import java.sql.SQLException;
 import javax.swing.JOptionPane;
 import static javax.swing.JOptionPane.*;
-import javax.swing.SwingUtilities;
 import main.Main;
 import user.*;
 

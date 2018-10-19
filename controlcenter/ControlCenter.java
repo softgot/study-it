@@ -6,7 +6,8 @@
 package controlcenter;
 import database.DBController;
 import helpclasses.MenuItemGroup;
-import interfaces.User;
+//import interfaces.User;
+import user.User;
 import java.awt.*;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;

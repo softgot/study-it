@@ -4,10 +4,10 @@
  */
 
 package helpclasses;
-import interfaces.User;
 import java.util.*;
 import javax.swing.*;
 import user.RegularUser;
+import user.User;
 
 /**
  * Klassen grupperar knapparna i programmet.

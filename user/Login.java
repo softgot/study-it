@@ -7,7 +7,6 @@ package user;
 import database.SQL;
 import helpclasses.EnvironmentVariables;
 import helpclasses.LoginManager;
-import interfaces.User;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
@@ -176,8 +175,8 @@ public class Login extends JPanel {
      * numret på användarna inte är identiska.
      */
     private class BoxItem {
-        private int userId;
-        private String userName;
+        private final int userId;
+        private final String userName;
         
         public BoxItem(int userId, String userName) {
             this.userId = userId;
@@ -189,6 +188,7 @@ public class Login extends JPanel {
         }
         
         //visa både användarnamn och användarid i rullista över användare
+        @Override
         public String toString() {
             return userName + " (" + userId + ")";
         }
@@ -199,6 +199,7 @@ public class Login extends JPanel {
      */
     private class CmbBoxAndBtnListener implements ActionListener {
         
+        @Override
         public void actionPerformed(ActionEvent e) {
             try {
                 
@@ -218,7 +219,7 @@ public class Login extends JPanel {
                     setCmbBoxUsers(); //till ny användare i rullista 
                 }
                 
-            } catch (Exception ex) { 
+            } catch (SQLException ex) { 
                 System.out.println(ex);
                 JOptionPane.showMessageDialog(null, "Ett fel inträffade när "
                         + "programmet försökte \n hämta användarlista "

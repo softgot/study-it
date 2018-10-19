@@ -7,12 +7,12 @@ package main;
 import controlcenter.ControlCenter;
 import database.SQL;
 import helpclasses.MenuItemGroup;
-import interfaces.User;
 import java.awt.*;
 import java.sql.*;
 import javax.swing.*;
 import menubar.Menubar;
 import user.Login;
+import user.User;
 
 /**
  * Main klassen för programmet.
@@ -23,10 +23,10 @@ public class Main {
     public static JFrame frame = new JFrame();
     public static JLabel lblCurrUser = new JLabel(""), lblTimer = new JLabel("");
     private static Cursor defaultCursor;
-    private Menubar menubar;
-    private ControlCenter ctrlCenter;
-    private Container c;
-    private ButtonBar buttonBar;
+    private final Menubar menubar;
+    private final ControlCenter ctrlCenter;
+    private final Container c;
+    private final ButtonBar buttonBar;
     
     public Main(User user) {
 //        new BooksLogo();
@@ -92,10 +92,8 @@ public class Main {
      * @param username uppdatera textfält med detta användarnamn
      */
     public static void setLoggedInUserLabel(final String username) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                lblCurrUser.setText("Inloggad som " + username);
-            }
+        SwingUtilities.invokeLater(() -> {
+            lblCurrUser.setText("Inloggad som " + username);
         });
     }
     
@@ -104,10 +102,8 @@ public class Main {
      * @param title titel att byta till
      */
     public static void setFrameTitle(final String title) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                frame.setTitle(title);
-            }
+        SwingUtilities.invokeLater(() -> {
+            frame.setTitle(title);
         });
     }
     
@@ -147,11 +143,8 @@ public class Main {
         try {
             final User user = new Login().login();
             if (user != null) { //korrekt inloggning
-                SwingUtilities.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        new Main(user); //starta program
-                    }
+                SwingUtilities.invokeLater(() -> {
+                    new Main(user); //starta program
                 });
             } else { //inloggningsdialog nedstängd, avsluta program
                 SQL.disconnect();
