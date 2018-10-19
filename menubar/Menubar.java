@@ -176,6 +176,7 @@ public class Menubar extends JMenuBar {
      * <code>ControlCenter</code>.
      */
     private class MenuClickListener implements ActionListener {
+        @Override
         public void actionPerformed(ActionEvent e) {
             
             String aCmd = e.getActionCommand(); //actionCommand

@@ -6,11 +6,8 @@
 package controlcenter;
 import database.DBController;
 import helpclasses.MenuItemGroup;
-//import interfaces.User;
 import user.User;
 import java.awt.*;
-import java.lang.reflect.InvocationTargetException;
-import java.sql.*;
 import javax.swing.*;
 import main.ButtonBar;
 import main.Main;
@@ -46,11 +43,11 @@ public class ControlCenter extends JPanel {
      * objekt för den östra knappmenyn som skapas vid start av programmet.
      * @param user användarobjekt
      * @param buttonBar objekt för genvägsmeny 
-     * @throws SQLException 
+     * @param menubar menybar
      */
     public ControlCenter(User user, ButtonBar buttonBar, Menubar menubar) {
         super(cardLayout);
-        this.user = user;
+        ControlCenter.user = user;
         
         //initiera progr. objekt, skicka med referens till denna klass
         buttonBar.setCtrlCenter(this);
@@ -72,8 +69,7 @@ public class ControlCenter extends JPanel {
      * till höger om kortsamlingarnas namn i det interna tabellfönstret. 
      * Som argument till metoden skickas namnet på kortsamlingen man valt
      * att öppna.
-     * @param collectionName namn på kortsamling att öppna
-     * @throws SQLException 
+     * @param collectionName namn på kortsamling att öppna 
      */
     public void showPreparePane(String collectionName) {
         MenuItemGroup.enableGroup(MenuItemGroup.SS_CONFIG); //aktivera knappar för fönster
@@ -87,8 +83,7 @@ public class ControlCenter extends JPanel {
      * Metoden anropas när man återvänder från en kortövning eller när man
      * stängt ned fönstret för det externa tabellfönstret. Metoden anropar metoder
      * i databasklassen som uppdaterar användarens samlingar mot databasen och 
-     * uppdaterarar den interna tabellen.
-     * @throws SQLException 
+     * uppdaterarar den interna tabellen. 
      */
     public void showControlCenter() {
         Main.setWaitCursor(true);
@@ -107,7 +102,7 @@ public class ControlCenter extends JPanel {
      * @param user nyinloggad användare
      */
     public void setUser(User user) {
-        this.user = user;
+        ControlCenter.user = user;
     }
     
     /**

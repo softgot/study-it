@@ -52,6 +52,7 @@ public class About implements ActionListener {
      * Tryck på stängknappen anropar metoden som stänger ned dialogfönstret.
      * @param ae knapphändelse
      */
+    @Override
     public void actionPerformed(ActionEvent ae) {
         dialog.setVisible(false);
     }

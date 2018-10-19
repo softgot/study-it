@@ -108,11 +108,9 @@ public class CardCollection {
     public int getOutdatedCount() {
         long systemTime = System.currentTimeMillis(); //nuvarande tid i ms
         int nbrOfExpCards = 0;
-        for (Card c : cards) { //sök efter utgångna kort
-            if ( systemTime >= c.getExpiresAt() ) { //kort gått ut, om mindre än
-                nbrOfExpCards++;                    //eller lika med nuvarande tid
-            }
-        }
+        nbrOfExpCards = cards.stream().filter((c) -> ( systemTime >= c.getExpiresAt() )).map((_item) -> 1).reduce(nbrOfExpCards, Integer::sum); //sök efter utgångna kort
+        //kort gått ut, om mindre än
+        //eller lika med nuvarande tid
         return nbrOfExpCards;
     }
     
@@ -121,9 +119,9 @@ public class CardCollection {
      */
     public void setCardsAsOutdated() {
         long currTime = System.currentTimeMillis(); //aktuell tid i ms
-        for (Card c : cards) {
+        cards.forEach((c) -> {
             c.setExpiresAt(currTime - 10000); //ny tid = aktuell tid - 10 sek.
-        }
+        });
     }
     
    /**
@@ -132,15 +130,13 @@ public class CardCollection {
     * @return kortsamling av utgångna kort 
     */
     public CardCollection getOutdatedCards() {
-        ArrayList<Card> outdatedCards = new ArrayList<Card>();
+        ArrayList<Card> outdatedCards = new ArrayList<>();
         CardCollection cc; //samling att spara utgångna kort i
         long systemTime = System.currentTimeMillis(); 
         
-        for (Card c : cards) { //sök efter utgångna kort
-            if ( c.getExpiresAt() <= systemTime ) {
-                outdatedCards.add( c ); //lägg till utgånget kort
-            }
-        }
+        cards.stream().filter((c) -> ( c.getExpiresAt() <= systemTime )).forEachOrdered((c) -> {
+            outdatedCards.add( c ); //lägg till utgånget kort
+        }); //sök efter utgångna kort
         //skapa och returnera kortsamling
         cc = new CardCollection( outdatedCards, tableName ); 
         return cc;
