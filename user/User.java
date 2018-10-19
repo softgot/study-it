@@ -17,13 +17,15 @@ import java.util.ArrayList;
  * kan inte göra ändringar i databasen.
  * @author Kristian Mörling
  */
-public abstract class User {
+public class User {
 
     private int userId;
     private String username;
     protected ArrayList<CardCollection> cardCollections; //samtliga kortsamlingar
 
     public User(int userId, String username) throws SQLException {
+        this.userId = userId;
+        this.username = username;
         boolean isUserGuest = userId == GlobalVariables.guestId;
         cardCollections = CollectionManager.getTablesAsCollections(userId,
                 isUserGuest);

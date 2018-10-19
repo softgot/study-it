@@ -114,11 +114,11 @@ public class Login extends JPanel {
             
             //hämta valt användarnamn, användarid och lösenord
             boxItem = (BoxItem)cmbBoxUsers.getSelectedItem(); 
-            selectedUid = boxItem.getSelectedUserId();
+            selectedUid = boxItem.getSelectedUserId(); 
             selectedPass = new String(passwordField.getPassword(), 0,
                     passwordField.getPassword().length);
             if (LoginManager.isLoginCorrect(selectedUid, selectedPass)) {
-                user = new RegularUser(selectedUid, selectedPass);
+                  user = new RegularUser(selectedUid, boxItem.userName);
                 accessGranted = true;
             }
             
